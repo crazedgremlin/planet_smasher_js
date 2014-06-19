@@ -1,5 +1,9 @@
+var MIN_STAR_DIST = 5000;
+var MAX_STAR_DIST = 10000;
+
 var MIN_COORD = -1000;
 var MAX_COORD = 1000;
+
 var TIME_COEFF = 0.005;
 
 var camera, scene, renderer, controls;
@@ -19,6 +23,7 @@ function init() {
     camera.position.z = 1000;
 
     scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x000000, 2000, 10000);
 
     (function createRedBox() {
         geometry = new THREE.BoxGeometry(50,50,50);
@@ -31,26 +36,43 @@ function init() {
     })();
 
     (function createStarfield() {
-        var particleCount = 1800;
-        var particles = new THREE.Geometry();
-        var pMaterial = new THREE.ParticleBasicMaterial({
-              color: 0xFFFF99,
-              size: 4 
-        });
 
-        for (var p=0; p<particleCount; p++) {
+        function doRandomParticles(num, color, size) {
+            var particles = new THREE.Geometry();
 
-            var extra = 1.5;
-            var pX = randVal(extra*MIN_COORD, extra*MAX_COORD);
-            var pY = randVal(extra*MIN_COORD, extra*MAX_COORD);
-            var pZ = randVal(extra*MIN_COORD, extra*MAX_COORD);
-            var particle = new THREE.Vector3(pX, pY, pZ);
+            var pMaterial = new THREE.ParticleSystemMaterial({
+                  color: color,
+                  size: size,
+                  fog: true
+            });
 
-            particles.vertices.push(particle);
+            for (var p=0; p<num; p++) {
+                var extra = 1.5;
+                var minCoord = extra*MIN_COORD;
+                var maxCoord = extra*MAX_COORD;
+                var pX = randVal(minCoord,maxCoord);
+                var pY = 0.2 * randVal(minCoord,maxCoord);
+                var pZ = randVal(minCoord,maxCoord);
+                var particle = new THREE.Vector3(pX, pY, pZ);
+
+                var starDist = randVal(MIN_STAR_DIST, MAX_STAR_DIST);
+                particle.setLength(starDist);
+                particles.vertices.push(particle);
+            }
+
+            var particleSystem = new THREE.ParticleSystem(particles, pMaterial);
+            scene.add(particleSystem);
         }
 
-        var particleSystem = new THREE.ParticleSystem(particles, pMaterial);
-        scene.add(particleSystem);
+        // small yeller stars
+        doRandomParticles(2000, 0xFFFF99, 20);
+        // big yeller stars
+        doRandomParticles(2000, 0xFFFF99, 40);
+        // red giants 
+        doRandomParticles(10, 0xFF4444, 70);
+        // blue giants
+        doRandomParticles(10, 0xAAAAFF, 70);
+
     })();
    
     (function makePlanets() {
@@ -78,7 +100,7 @@ function init() {
 
 
     (function setUpCamera() {
-        controls = new THREE.TrackballControls( camera );
+        controls = new THREE.TrackballControls(camera);
 
         controls.rotateSpeed = 1.0;
         controls.zoomSpeed = 1.2;
@@ -92,7 +114,9 @@ function init() {
 
         controls.keys = [ 65, 83, 68 ];
 
-        controls.addEventListener( 'change', renderer.render );
+        controls.addEventListener('change', function() {
+            renderer.render(scene, camera);
+        });
     })();
 
     document.body.appendChild(renderer.domElement);
