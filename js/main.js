@@ -4,6 +4,11 @@ var MAX_STAR_DIST = 10000;
 var MIN_COORD = -1000;
 var MAX_COORD = 1000;
 
+var MIN_MASS = 10;
+var MAX_MASS = 100;
+
+var INITIAL_PROJECTILE_VELOCITY = 100;
+
 var TIME_COEFF = 0.005;
 
 var camera, scene, renderer, controls;
@@ -141,8 +146,41 @@ function animate() {
     }
     //rotateCam();
 
+    projectile.stepTime();
+    projectile.updateMesh(mesh);
+
+    updateProjectileVelocities();
+
+
     renderer.render(scene, camera);
     controls.update();
+}
+
+function updateProjectileVelocities() {
+    var planetPosVec = new THREE.Vector3();
+    var forceScalar;
+    var forceVec = new THREE.Vector3();
+    var thisForceVec = new THREE.Vector3();
+
+    for (var i=0; i<planetArr.length; i++) {
+        var thisPlanet = planetArr[i];
+        planetPosVec.x = thisPlanet.x;
+        planetPosVec.y = thisPlanet.y;
+        planetPosVec.z = thisPlanet.z;
+        forceScalar = thisPlanet.mass / mesh.position.distanceTo(planetPosVec);   
+
+        thisForceVec.x = thisPlanet.x;
+        thisForceVec.y = thisPlanet.y;
+        thisForceVec.z = thisPlanet.z;
+        thisForceVec.sub( mesh.position );
+        thisForceVec.setLength(forceScalar);
+
+        forceVec.add(thisForceVec);
+    }
+
+    projectile.v_x += forceVec.x;
+    projectile.v_y += forceVec.y;
+    projectile.v_z += forceVec.z;
 }
 
 
@@ -157,6 +195,7 @@ function createPlanets() {
     console.log(MIN_COORD + "; " + MAX_COORD);
     for (var i=0; i<numPlanets; i++) {
         var thisSpaceObj = new SpaceObject();
+        thisSpaceObj.mass = randVal(MIN_MASS, MAX_MASS);
 
         // X and Z are evenly dispersed
         thisSpaceObj.x = randVal(MIN_COORD, MAX_COORD);
@@ -168,4 +207,24 @@ function createPlanets() {
     }
 
     return planets;
+}
+
+window.onkeydown = function(e) {
+
+    // Spacebar
+    if (e.keyCode == 32) {
+
+        // Set velocity of projectile
+
+        // get direction camera is looking
+        var vector = new THREE.Vector3( 0, 0, -1 );
+        vector.applyQuaternion( camera.quaternion );
+        //angle = vector.angleTo( mesh.position );
+
+        console.log(vector);
+
+        projectile.v_x = vector.x * INITIAL_PROJECTILE_VELOCITY;
+        projectile.v_y = vector.y * INITIAL_PROJECTILE_VELOCITY;
+        projectile.v_z = vector.z * INITIAL_PROJECTILE_VELOCITY;
+    }
 }
