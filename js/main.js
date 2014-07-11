@@ -7,7 +7,7 @@ var MAX_COORD = 1000;
 var MIN_MASS = 10;
 var MAX_MASS = 100;
 
-var INITIAL_PROJECTILE_VELOCITY = 100;
+var INITIAL_PROJECTILE_VELOCITY = 10;
 
 var TIME_COEFF = 0.005;
 
@@ -145,6 +145,8 @@ function animate() {
         camera.lookAt( new THREE.Vector3(0,0,0) );
     }
     //rotateCam();
+    //
+    camera.lookAt( mesh.position );
 
     projectile.stepTime();
     projectile.updateMesh(mesh);
@@ -167,13 +169,13 @@ function updateProjectileVelocities() {
         planetPosVec.x = thisPlanet.x;
         planetPosVec.y = thisPlanet.y;
         planetPosVec.z = thisPlanet.z;
-        forceScalar = thisPlanet.mass / mesh.position.distanceTo(planetPosVec);   
+        forceScalar = thisPlanet.mass / Math.pow(mesh.position.distanceTo(planetPosVec), 2);   
 
         thisForceVec.x = thisPlanet.x;
         thisForceVec.y = thisPlanet.y;
         thisForceVec.z = thisPlanet.z;
         thisForceVec.sub( mesh.position );
-        thisForceVec.setLength(forceScalar);
+        thisForceVec.setLength(forceScalar * 100);
 
         forceVec.add(thisForceVec);
     }
