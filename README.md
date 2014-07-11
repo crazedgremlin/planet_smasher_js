@@ -1,4 +1,5 @@
-# Planet Smasher
+# Planet Smasher ([Demo](http://crazedgremlin.github.io/planet_smasher_js/))
+
 
 The goal of this game is to destroy the target planet with the projectile.  It
 is not straightforward to do this because the projectile is influenced by the
