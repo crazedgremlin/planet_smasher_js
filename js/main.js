@@ -24,7 +24,7 @@ var CAMERA_MODES = {
     WATCH_CENTER: 1,
     WATCH_FROM_CENTER: 2
 }
-var cameraMode = CAMERA_MODES.WATCH_FROM_CENTER;
+var cameraMode = CAMERA_MODES.FOLLOW;
 
 
 init();
@@ -130,7 +130,7 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 
 
-    document.body.appendChild(renderer.domElement);
+    document.getElementById("gameViewport").appendChild(renderer.domElement);
 }
 
 function animate() {

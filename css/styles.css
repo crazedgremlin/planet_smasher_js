@@ -1,0 +1,14 @@
+#gameViewport {
+    margin: 0 0;
+    padding: 0 0;
+    overflow: hidden;
+}
+
+#controls {
+	background-color: #222;
+	height: 100%;
+	color: white;
+}
+#controls > * {
+	padding-left: 20px;
+}
