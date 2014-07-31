@@ -1,27 +1,24 @@
 SpaceObject = function() {
     // properties
     this.mass = 1;
+    this.radius = 1;
 
     // positions
-    this.x = 0;
-    this.y = 0;
-    this.z = 0;
+    this.pos = new THREE.Vector3(0,0,0);
+    this.vel = new THREE.Vector3(0,0,0);
 
-    // velocities
-    this.v_x = 0;
-    this.v_y = 0;
-    this.v_z = 0;
-
+    this.getPosVec = function() {
+        return this.pos.clone();
+    }
+    this.getVelVec = function() {
+        return this.vel.clone();
+    }
 
     this.stepTime = function() {
-        this.x += this.v_x;
-        this.y += this.v_y;
-        this.z += this.v_z;
+        this.pos.add(this.vel);
     }
 
     this.updateMesh = function(mesh) {
-        mesh.position.x = this.x;
-        mesh.position.y = this.y;
-        mesh.position.z = this.z;
+        mesh.position = this.pos;
     }
 }

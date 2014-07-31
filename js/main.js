@@ -1,15 +1,15 @@
 var MIN_STAR_DIST = 5000;
 var MAX_STAR_DIST = 10000;
 
-var MIN_COORD = -1000;
-var MAX_COORD = 1000;
+var MIN_COORD = -1500;
+var MAX_COORD = 1500;
 
 var MIN_MASS = 10;
 var MAX_MASS = 100;
 
 var INITIAL_PROJECTILE_VELOCITY = 10;
 
-var TIME_COEFF = 0.005;
+var TIME_COEFF = 0.015;
 
 var camera, scene, renderer, controls;
 var geometry, material, mesh;
@@ -17,6 +17,7 @@ var geometry, material, mesh;
 var time = 0;
 var planetArr = createPlanets();
 var projectile = new SpaceObject();
+var arrowHelper;
 
 
 init();
@@ -29,6 +30,18 @@ function init() {
 
     scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0x000000, 2000, 10000);
+
+
+    (function setUpArrow() {
+        var dir = new THREE.Vector3( 1, 0, 0 );
+        var origin = new THREE.Vector3( 0, 0, 0 );
+        var length = 100;
+        var hex = 0x00ff00;
+
+        //arrowHelper = new THREE.ArrowHelper( dir, origin, length, hex );
+        //scene.add( arrowHelper );
+    })();
+
 
     (function createRedBox() {
         geometry = new THREE.BoxGeometry(50,50,50);
@@ -52,9 +65,8 @@ function init() {
             });
 
             for (var p=0; p<num; p++) {
-                var extra = 1.5;
-                var minCoord = extra*MIN_COORD;
-                var maxCoord = extra*MAX_COORD;
+                var minCoord = MIN_COORD;
+                var maxCoord = MAX_COORD;
                 var pX = randVal(minCoord,maxCoord);
                 var pY = 0.2 * randVal(minCoord,maxCoord);
                 var pZ = randVal(minCoord,maxCoord);
@@ -70,13 +82,13 @@ function init() {
         }
 
         // small yeller stars
-        doRandomParticles(2000, 0xFFFF99, 20);
+        doRandomParticles(100, 0xFFFF99, 20);
         // big yeller stars
-        doRandomParticles(2000, 0xFFFF99, 40);
+        doRandomParticles(100, 0xFFFF99, 40);
         // red giants 
-        doRandomParticles(10, 0xFF4444, 70);
+        doRandomParticles(5, 0xFF4444, 70);
         // blue giants
-        doRandomParticles(10, 0xAAAAFF, 70);
+        doRandomParticles(5, 0xAAAAFF, 70);
 
     })();
    
@@ -88,9 +100,11 @@ function init() {
                 color: 0x00ddff,
                 wireframe: true 
             });
-            var planetGeometry = new THREE.BoxGeometry(100, 100, 100);
+            var planetGeometry = new THREE.TetrahedronGeometry(thisPlanet.radius, 3);
             planetGeometry.applyMatrix(
-                new THREE.Matrix4().makeTranslation(thisPlanet.x, thisPlanet.y, thisPlanet.z)
+                new THREE.Matrix4().makeTranslation(thisPlanet.pos.x, 
+                                                    thisPlanet.pos.y, 
+                                                    thisPlanet.pos.z)
             );
             var planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
 
@@ -129,30 +143,54 @@ function init() {
 
 function animate() {
     time++;
+    updateProjectileVelocities();
     
     // note: three.js includes requestAnimationFrame shim
     requestAnimationFrame(animate);
 
-    // Rotate projectile
-    mesh.rotation.x += 0.01;
-    mesh.rotation.y += 0.02;
 
     // Rotate camera
     function rotateCam() {
-        camera.position.x = Math.cos(time*TIME_COEFF) * 1000;
-        camera.position.z = Math.sin(time*TIME_COEFF) * 1000;
-        camera.position.y = Math.cos(time*TIME_COEFF) * 1000;
-        camera.lookAt( new THREE.Vector3(0,0,0) );
+        camera.position = mesh.position.clone();
+        camera.position.x += Math.cos(time*TIME_COEFF) * 1000;
+        camera.position.z += Math.sin(time*TIME_COEFF) * 1000;
+        camera.position.y += Math.cos(time*TIME_COEFF) * 1000;
+
+        camera.lookAt( new THREE.Vector3() );
     }
-    //rotateCam();
-    //
-    camera.lookAt( mesh.position );
+    
+
+    // Create a normalized vector pointing in the direction of motion
+    var velocityVec = projectile.getVelVec();
+    var speed = velocityVec.length();
+    velocityVec.setLength(1);
+
+
+    // Rotate projectile
+    mesh.rotation.x += 0.001 * speed;
+    mesh.rotation.y += 0.002 * speed;
+
+    // Elongate that vector
+    var longVelocityVec = velocityVec.clone();
+    longVelocityVec.setLength(100 / speed*speed );
+
+    var forwardPos = mesh.position.clone();
+    forwardPos = forwardPos.add(longVelocityVec);
+
+    var backwardPos = mesh.position.clone();
+    backwardPos.sub(longVelocityVec);
+
+    camera.position = backwardPos.clone();
+    camera.lookAt(forwardPos);
+    camera.updateProjectionMatrix();
+
+    //arrowHelper.position = backwardPos.clone();
+    //arrowHelper.setDirection(velocityVec);
 
     projectile.stepTime();
     projectile.updateMesh(mesh);
-
-    updateProjectileVelocities();
-
+    //rotateCam();
+ 
 
     renderer.render(scene, camera);
     controls.update();
@@ -166,23 +204,17 @@ function updateProjectileVelocities() {
 
     for (var i=0; i<planetArr.length; i++) {
         var thisPlanet = planetArr[i];
-        planetPosVec.x = thisPlanet.x;
-        planetPosVec.y = thisPlanet.y;
-        planetPosVec.z = thisPlanet.z;
+        planetPosVec = thisPlanet.getPosVec();
         forceScalar = thisPlanet.mass / Math.pow(mesh.position.distanceTo(planetPosVec), 2);   
-
-        thisForceVec.x = thisPlanet.x;
-        thisForceVec.y = thisPlanet.y;
-        thisForceVec.z = thisPlanet.z;
+    
+        thisForceVec = planetPosVec.clone();
         thisForceVec.sub( mesh.position );
         thisForceVec.setLength(forceScalar * 100);
 
         forceVec.add(thisForceVec);
     }
 
-    projectile.v_x += forceVec.x;
-    projectile.v_y += forceVec.y;
-    projectile.v_z += forceVec.z;
+    projectile.vel.add(forceVec);
 }
 
 
@@ -191,19 +223,19 @@ function randVal(min, max) {
 }
 
 function createPlanets() {
-    var planets = []; // pirate code?
+    var planets = []; 
     var numPlanets = Math.floor(randVal(3, 7));
 
-    console.log(MIN_COORD + "; " + MAX_COORD);
     for (var i=0; i<numPlanets; i++) {
         var thisSpaceObj = new SpaceObject();
         thisSpaceObj.mass = randVal(MIN_MASS, MAX_MASS);
+        thisSpaceObj.radius = 2*thisSpaceObj.mass;
 
         // X and Z are evenly dispersed
-        thisSpaceObj.x = randVal(MIN_COORD, MAX_COORD);
-        thisSpaceObj.z = randVal(MIN_COORD, MAX_COORD);
+        thisSpaceObj.pos.x = randVal(MIN_COORD, MAX_COORD);
+        thisSpaceObj.pos.z = randVal(MIN_COORD, MAX_COORD);
         // Y is artifically limited to a small range, keeping planets generally on a plane
-        thisSpaceObj.y = randVal(MIN_COORD, MAX_COORD)/20;
+        thisSpaceObj.pos.y = randVal(MIN_COORD, MAX_COORD)/20;
 
         planets[i] = thisSpaceObj;
     }
