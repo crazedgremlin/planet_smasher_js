@@ -5,7 +5,7 @@ var MIN_COORD = -1500;
 var MAX_COORD = 1500;
 
 var MIN_MASS = 10;
-var MAX_MASS = 100;
+var MAX_MASS = 300;
 
 var INITIAL_PROJECTILE_VELOCITY = 10;
 
@@ -19,6 +19,13 @@ var planetArr = createPlanets();
 var projectile = new SpaceObject();
 var arrowHelper;
 
+var CAMERA_MODES = {
+    FOLLOW: 0,
+    WATCH_CENTER: 1,
+    WATCH_FROM_CENTER: 2
+}
+var cameraMode = CAMERA_MODES.WATCH_FROM_CENTER;
+
 
 init();
 animate();
@@ -27,6 +34,7 @@ function init() {
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     camera.position.z = 1000;
+
 
     scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0x000000, 2000, 10000);
@@ -47,7 +55,8 @@ function init() {
         geometry = new THREE.BoxGeometry(50,50,50);
         material = new THREE.MeshBasicMaterial({
             color: 0xff0000,
-            wireframe: true 
+            wireframe: true,
+            wireframe_linewidth: 0
         });
         mesh = new THREE.Mesh(geometry, material);
         scene.add(mesh);
@@ -96,8 +105,11 @@ function init() {
         for (var i=0; i<planetArr.length; i++) {
             var thisPlanet = planetArr[i];
             
+            var color = new THREE.Color();
+            color.setHSL(thisPlanet.mass/MAX_MASS, 0.5, 0.5);
+
             var planetMaterial = new THREE.MeshBasicMaterial({
-                color: 0x00ddff,
+                color: color,
                 wireframe: true 
             });
             var planetGeometry = new THREE.TetrahedronGeometry(thisPlanet.radius, 3);
@@ -151,18 +163,28 @@ function animate() {
     mesh.rotation.y += 0.002 * speed;
 
     // Elongate that vector
-    var longVelocityVec = velocityVec.clone();
-    longVelocityVec.setLength(100 / speed*speed );
+    if (cameraMode === CAMERA_MODES.FOLLOW) {
+        var longVelocityVec = velocityVec.clone();
+        longVelocityVec.setLength(100 / speed*speed );
 
-    var forwardPos = mesh.position.clone();
-    forwardPos = forwardPos.add(longVelocityVec);
+        var forwardPos = mesh.position.clone();
+        forwardPos = forwardPos.add(longVelocityVec);
 
-    var backwardPos = mesh.position.clone();
-    backwardPos.sub(longVelocityVec);
+        var backwardPos = mesh.position.clone();
+        backwardPos.sub(longVelocityVec);
 
-    camera.position = backwardPos.clone();
-    camera.lookAt(forwardPos);
-    camera.updateProjectionMatrix();
+        camera.position = backwardPos.clone();
+        camera.lookAt(forwardPos);
+    } else if (cameraMode === CAMERA_MODES.WATCH_CENTER) {
+        var camPos = projectile.getPosVec();
+        camPos.multiplyScalar(1.3);
+
+        camera.position = camPos;
+        camera.lookAt(new THREE.Vector3());
+    } else if (cameraMode === CAMERA_MODES.WATCH_FROM_CENTER) {
+        camera.position = new THREE.Vector3();
+        camera.lookAt(mesh.position);
+    }
 
     //arrowHelper.position = backwardPos.clone();
     //arrowHelper.setDirection(velocityVec);
@@ -173,7 +195,6 @@ function animate() {
  
 
     renderer.render(scene, camera);
-    controls.update();
 }
 
 function updateProjectileVelocities() {
@@ -209,7 +230,7 @@ function createPlanets() {
     for (var i=0; i<numPlanets; i++) {
         var thisSpaceObj = new SpaceObject();
         thisSpaceObj.mass = randVal(MIN_MASS, MAX_MASS);
-        thisSpaceObj.radius = 2*thisSpaceObj.mass;
+        thisSpaceObj.radius = 0.3*thisSpaceObj.mass;
 
         // X and Z are evenly dispersed
         thisSpaceObj.pos.x = randVal(MIN_COORD, MAX_COORD);
