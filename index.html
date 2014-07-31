@@ -1,17 +1,37 @@
 <html>
     <head>
         <title>Planet Smasher</title>
-        <style>
-            body {
-                margin: 0 0;
-                overflow: hidden;
-            }
-        </style>
+
+        <link href="css/styles.css" rel="stylesheet">
+        <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+        <link href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
+        <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
     </head>
     <body>
+
+
+        <div class="row">
+            <div id="controls" class="col-md-2">
+                <h1>Gravity</h1>
+
+                <h3>Camera Modes</h3>
+
+                <div class="btn-group-vertical">
+                    <button id="camera_follow_btn" type="button" class="cameraButton btn btn-primary">Follow Behind</button>
+                    <button id="camera_watch_center_btn" type="button" class="cameraButton btn btn-default">Follow Watching Center</button>
+                    <button id="camera_watch_from_center_btn" type="button" class="cameraButton btn btn-default">Watch From Center</button>
+                </div>
+
+            </div>
+            <div id="gameViewport" class="col-md-10">
+            </div>
+        </div>
+
+
     </body>
 </html>
 <script src="js/three.min.js"></script>
 <script src="js/controls/TrackballControls.js"></script>
 <script src="js/SpaceObject.js"></script>
+<script src="js/ui.js"></script>
 <script src="js/main.js"></script>
