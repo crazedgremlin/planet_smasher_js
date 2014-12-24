@@ -14,17 +14,23 @@ var TIME_COEFF = 0.015;
 var camera, scene, renderer, controls;
 var geometry, material, mesh;
 
-var time = 0;
-var planetArr = createPlanets();
-var projectile = new SpaceObject();
-var arrowHelper;
-
 var CAMERA_MODES = {
     FOLLOW: 0,
     WATCH_CENTER: 1,
     WATCH_FROM_CENTER: 2
-}
+};
 var cameraMode = CAMERA_MODES.FOLLOW;
+
+var GAME_MODES = {
+    TWO_DEE: 2,
+    THREE_DEE: 3
+};
+var gameMode = GAME_MODES.TWO_DEE;
+
+var time = 0;
+var planetArr = createPlanets();
+var projectile = new SpaceObject();
+var arrowHelper;
 
 
 init();
@@ -33,12 +39,11 @@ animate();
 function init() {
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
-    camera.position.z = 1000;
+    camera.position.setZ(1000);
 
 
     scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0x000000, 2000, 10000);
-
 
     (function setUpArrow() {
         var dir = new THREE.Vector3( 1, 0, 0 );
@@ -67,7 +72,7 @@ function init() {
         function doRandomParticles(num, color, size) {
             var particles = new THREE.Geometry();
 
-            var pMaterial = new THREE.ParticleSystemMaterial({
+            var pMaterial = new THREE.PointCloudMaterial({
                   color: color,
                   size: size,
                   fog: true
@@ -86,7 +91,7 @@ function init() {
                 particles.vertices.push(particle);
             }
 
-            var particleSystem = new THREE.ParticleSystem(particles, pMaterial);
+            var particleSystem = new THREE.PointCloud(particles, pMaterial);
             scene.add(particleSystem);
         }
 
@@ -143,11 +148,12 @@ function animate() {
 
     // Rotate camera
     function rotateCam() {
-        camera.position = mesh.position.clone();
-        camera.position.x += Math.cos(time*TIME_COEFF) * 1000;
-        camera.position.z += Math.sin(time*TIME_COEFF) * 1000;
-        camera.position.y += Math.cos(time*TIME_COEFF) * 1000;
-
+        camera.position.copy( mesh.position );
+        camera.position.add(
+            new THREE.Vector3(
+                Math.cos(time*TIME_COEFF) * 1000,
+                Math.sin(time*TIME_COEFF) * 1000,
+                Math.cos(time*TIME_COEFF) * 1000));
         camera.lookAt( new THREE.Vector3() );
     }
     
@@ -173,8 +179,9 @@ function animate() {
         var backwardPos = mesh.position.clone();
         backwardPos.sub(longVelocityVec);
 
-        camera.position = backwardPos.clone();
+        camera.position.copy(backwardPos);
         camera.lookAt(forwardPos);
+
     } else if (cameraMode === CAMERA_MODES.WATCH_CENTER) {
         var camPos = projectile.getPosVec();
         camPos.multiplyScalar(1.3);
@@ -235,8 +242,16 @@ function createPlanets() {
         // X and Z are evenly dispersed
         thisSpaceObj.pos.x = randVal(MIN_COORD, MAX_COORD);
         thisSpaceObj.pos.z = randVal(MIN_COORD, MAX_COORD);
-        // Y is artifically limited to a small range, keeping planets generally on a plane
-        thisSpaceObj.pos.y = randVal(MIN_COORD, MAX_COORD)/20;
+
+        if (gameMode == GAME_MODES.THREE_DEE) {
+            // Y is artifically limited to a small range, keeping planets
+            // generally on a plane
+            thisSpaceObj.pos.y = randVal(MIN_COORD, MAX_COORD)/20;
+        } else if (gameMode == GAME_MODES.TWO_DEE) {
+            // In 2D, all planet y values are on the same 3D plane
+            thisSpaceObj.pos.y = 0;
+        }
+
 
         planets[i] = thisSpaceObj;
     }

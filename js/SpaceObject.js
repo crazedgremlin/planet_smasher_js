@@ -19,6 +19,7 @@ SpaceObject = function() {
     }
 
     this.updateMesh = function(mesh) {
-        mesh.position = this.pos;
+        // copy the value of this.pos to the specified mesh
+        mesh.position.copy(this.pos);
     }
 }
